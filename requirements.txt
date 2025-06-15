@@ -2,4 +2,8 @@ gradio
 requests
 transformers
 huggingface-hub
+langgraph
+langsmith
+langchain
+langchain-ollama
 torch
