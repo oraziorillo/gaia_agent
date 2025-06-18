@@ -3,6 +3,7 @@ requests
 transformers
 huggingface-hub
 langgraph
+langgraph-cli[inmem]
 langsmith
 langchain
 langchain-ollama
