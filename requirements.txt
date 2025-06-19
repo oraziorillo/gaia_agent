@@ -7,4 +7,6 @@ langgraph-cli[inmem]
 langsmith
 langchain
 langchain-ollama
+langchain-community
 torch
+wikipedia

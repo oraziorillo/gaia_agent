@@ -1,1 +1,2 @@
 from langchain_tavily import TavilySearch
+from langchain_community.retrievers import WikipediaRetriever
