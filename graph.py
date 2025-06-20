@@ -2,7 +2,8 @@ from langgraph.graph import StateGraph, MessagesState, END
 from langgraph.prebuilt import ToolNode
 from langchain.prompts import ChatPromptTemplate
 
-from chat_models import chat_llama_3_1_8b_instruct_ollama
+from chat_models import chat_gpt_4o_mini
+from tools import tavily_search_tool, wikipedia_retriever_tool
 
 SYSTEM_PROMPT = "You are a general AI assistant. I will ask you a question. Report your thoughts, and finish your answer with the following template: FINAL ANSWER: [YOUR FINAL ANSWER]. YOUR FINAL ANSWER should be a number OR as few words as possible OR a comma separated list of numbers and/or strings. If you are asked for a number, don’t use comma to write your number neither use units such as $ or percent sign unless specified otherwise. If you are asked for a string, don’t use articles, neither abbreviations (e.g. for cities), and write the digits in plain text unless specified otherwise. If you are asked for a comma separated list, apply the above rules depending of whether the element to be put in the list is a number or a string."
 
@@ -25,16 +26,14 @@ def should_continue(state: MessagesState):
 
 main_prompt = ChatPromptTemplate.from_messages(
     [
-        (
-            "system", SYSTEM_PROMPT
-        ),
+        ("system", SYSTEM_PROMPT),
         ("placeholder", "{messages}"),
     ]
 )
 
-tools = []
+tools = [tavily_search_tool, wikipedia_retriever_tool]
 
-llm_with_tools = chat_llama_3_1_8b_instruct_ollama.bind_tools(tools)
+llm_with_tools = chat_gpt_4o_mini.bind_tools(tools)
 main_runnable = main_prompt | llm_with_tools 
 
 workflow = StateGraph(MessagesState)
