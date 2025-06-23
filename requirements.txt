@@ -1,12 +1,15 @@
+docker
 gradio
-requests
-transformers
 huggingface-hub
 langgraph
 langgraph-cli[inmem]
 langsmith
 langchain
 langchain-ollama
+langchain-openai
 langchain-community
+requests
 torch
+transformers
 wikipedia
+html-to-markdown
