@@ -32,10 +32,10 @@ main_prompt = ChatPromptTemplate.from_messages(
 )
 
 tools = [
-    # tavily_tools.tavily_search,
+    tavily_tools.tavily_search,
     wikipedia_tools.wikipedia_page_retriever,
-    # web_scraper.fetch_text_content,
-    # calculator.evaluate_expression
+    web_scraper.fetch_text_content,
+    calculator.evaluate_expression
 ]
 
 llm_with_tools = chat_model.bind_tools(tools)
