@@ -1,18 +1,11 @@
+import openai
 from typing import List
 from wikipedia import WikipediaPage
 from bs4 import BeautifulSoup
 from html_to_markdown import convert_to_markdown
-from langchain_core.prompts import PromptTemplate
-from langchain_core.output_parsers import StrOutputParser
-from langchain_openai.chat_models import ChatOpenAI
 from .prompts import entity_analysis_prompt, synthesis_prompt
 
-chat_model = ChatOpenAI(
-    model="gpt-4o-mini",
-    temperature=0, 
-    seed=42,
-    top_p=0.95 
-)
+client = openai.OpenAI()
 
 def identify_wikipedia_entities(query: str) -> List[str]:
     """
@@ -24,17 +17,26 @@ def identify_wikipedia_entities(query: str) -> List[str]:
     Returns:
         List of potential Wikipedia page titles
     """
-    prompt = PromptTemplate.from_template(entity_analysis_prompt)
-    chain = prompt | chat_model | StrOutputParser()
-    response = chain.invoke({'query': query})
+    prompt = entity_analysis_prompt.format(query=query)
     
-    if "NONE" in response.upper():
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0,
+        seed=42,
+    )
+    
+    content = response.choices[0].message.content
+    
+    if "NONE" in content.upper():
         return []
     
     entities = []
 
     # Parse the response to extract entities
-    for entity in response.strip().split(';'):
+    for entity in content.strip().split(';'):
         entities.append(entity.strip())
     
     return entities
@@ -57,14 +59,23 @@ def synthesize_information(query: str, context: str) -> str:
         Synthesized information or "I have found no information."
     """
 
-    prompt = PromptTemplate.from_template(synthesis_prompt) 
-    chain = prompt | chat_model | StrOutputParser()
-    response = chain.invoke({'query': query, 'context': context})
+    prompt = synthesis_prompt.format(query=query, context=context)
     
-    if not response:
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0,
+        seed=42,
+    )
+    
+    content = response.choices[0].message.content
+    
+    if not content or "NONE" in content.upper():
         return None
     
-    return response.strip()
+    return content.strip()
     
 def clean_wikipedia_html(html_content):
     soup = BeautifulSoup(html_content, "html.parser")

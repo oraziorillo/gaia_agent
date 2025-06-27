@@ -4,7 +4,6 @@ from .utils import identify_wikipedia_entities, extract_context, synthesize_info
 
 no_relevant_info_found_sentence = "No relevant information could be found on Wikipedia about the query."
 
-@tool
 def wikipedia_page_retriever(query: str):
     """ Tool that fetches any pages from Wikipedia.
 
@@ -23,11 +22,5 @@ def wikipedia_page_retriever(query: str):
         wikipedia_page = wikipedia.page(entity)
         if i == 0: context = extract_context(wikipedia_page)
         else: context += "\n\n" + extract_context(wikipedia_page)
-
-    # Step 3: Synthesize information for the main agent
-    # synthesized_info = synthesize_information(query, context)
-
-    # if not synthesized_info:
-    #     return no_relevant_info_found_sentence
     
     return context

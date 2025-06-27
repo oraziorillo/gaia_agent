@@ -1,9 +1,10 @@
 gradio
-langgraph
-langgraph-cli[inmem]
-langsmith
-langchain
-langchain-openai
+openai
+python-dotenv
 requests
 wikipedia
 html-to-markdown
+beautifulsoup4
+langchain
+langchain-core
+langchain-tavily

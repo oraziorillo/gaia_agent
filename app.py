@@ -36,6 +36,7 @@ def run_and_submit_all( profile: gr.OAuthProfile | None):
     api_url = DEFAULT_API_URL
     questions_url = f"{api_url}/questions"
     submit_url = f"{api_url}/submit"
+    files_url = f"{api_url}/files"
 
     # 1. Instantiate Agent ( modify this part to create your agent)
     try:
@@ -54,16 +55,16 @@ def run_and_submit_all( profile: gr.OAuthProfile | None):
         response.raise_for_status()
         questions_data = response.json()
         if not questions_data:
-             print("Fetched questions list is empty.")
-             return "Fetched questions list is empty or invalid format.", None
+            print("Fetched questions list is empty.")
+            return "Fetched questions list is empty or invalid format.", None
         print(f"Fetched {len(questions_data)} questions.")
     except requests.exceptions.RequestException as e:
         print(f"Error fetching questions: {e}")
         return f"Error fetching questions: {e}", None
     except requests.exceptions.JSONDecodeError as e:
-         print(f"Error decoding JSON response from questions endpoint: {e}")
-         print(f"Response text: {response.text[:500]}")
-         return f"Error decoding server response for questions: {e}", None
+        print(f"Error decoding JSON response from questions endpoint: {e}")
+        print(f"Response text: {response.text[:500]}")
+        return f"Error decoding server response for questions: {e}", None
     except Exception as e:
         print(f"An unexpected error occurred fetching questions: {e}")
         return f"An unexpected error occurred fetching questions: {e}", None
@@ -75,16 +76,22 @@ def run_and_submit_all( profile: gr.OAuthProfile | None):
     for item in questions_data:
         task_id = item.get("task_id")
         question_text = item.get("question")
+        file_name = item.get("file_name")
+        if file_name:
+            file_response = requests.get(f'{files_url}/{task_id}')
+            file = file_response.content
+        else:
+            file = None
         if not task_id or question_text is None:
             print(f"Skipping item with missing task_id or question: {item}")
             continue
         try:
-            submitted_answer = agent(question_text)
+            submitted_answer = agent(question_text, file_name, file)
             answers_payload.append({"task_id": task_id, "submitted_answer": submitted_answer})
             results_log.append({"Task ID": task_id, "Question": question_text, "Submitted Answer": submitted_answer})
         except Exception as e:
-             print(f"Error running agent on task {task_id}: {e}")
-             results_log.append({"Task ID": task_id, "Question": question_text, "Submitted Answer": f"AGENT ERROR: {e}"})
+            print(f"Error running agent on task {task_id}: {e}")
+            results_log.append({"Task ID": task_id, "Question": question_text, "Submitted Answer": f"AGENT ERROR: {e}"})
 
     if not answers_payload:
         print("Agent did not produce any answers to submit.")

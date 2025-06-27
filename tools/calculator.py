@@ -133,7 +133,6 @@ class SafeMathEvaluator:
 # Initialize the evaluator
 math_evaluator = SafeMathEvaluator()
 
-@tool
 def evaluate_expression(expression: str) -> str:
     """
     Perform mathematical calculations safely. This tool can handle:
