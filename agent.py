@@ -26,7 +26,7 @@ def call_function(name, args):
     if name == "web_search":
         return web_search(**args)
 
-supported_file_extensions = [
+responses_api_supported_file_extensions = [
     ".c",
     ".cpp",
     ".cs",
@@ -49,6 +49,41 @@ supported_file_extensions = [
     ".tex",
     ".ts",
     ".txt",
+]
+
+code_interpreter_supported_file_extensions = [
+    ".c",
+    ".cs",
+    ".cpp",
+    ".csv",
+    ".doc",
+    ".docx",
+    ".html",
+    ".java",
+    ".json",
+    ".md",
+    ".pdf",
+    ".php",
+    ".pptx",
+    ".py",
+    ".py",
+    ".rb",
+    ".tex",
+    ".txt",
+    ".css",
+    ".js",
+    ".sh",
+    ".ts",
+    ".csv",
+    ".jpeg",
+    ".jpg",
+    ".gif",
+    ".pkl",
+    ".png",
+    ".tar",
+    ".xlsx",
+    ".xml",
+    ".zip",
 ]
 class GAIAAgent:
     """
@@ -135,7 +170,7 @@ class GAIAAgent:
         """
         print(f"Agent received question: {question}")
 
-        if file_name and file_name.split('.')[-1] in supported_file_extensions:
+        if file_name and file_name.split('.')[-1] in responses_api_supported_file_extensions:
             file = self.client.files.create(
                 file_bytes,
                 purpose="user_data"
@@ -150,14 +185,15 @@ class GAIAAgent:
                     "text": question,
                 },
             ]
+        elif file_name and file_name.split('.')[-1] in code_interpreter_supported_file_extensions:
+            # TODO: Implement code interpreter logic here
+            pass
         elif file_name and file_name.endswith("mp3"):
             transcript = self.client.audio.transcriptions.create(
                 model="gpt-4o-transcribe",
                 file=file_bytes
             )
             user_content = f"{question}\n\nHere is the transcript of the audio file: \"{transcript.text}\""
-        elif file_name and file_name.endswith("xslx"):
-            
         else:
             file = None
             user_content = question
