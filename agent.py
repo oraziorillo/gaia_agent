@@ -1,4 +1,5 @@
 import os
+import traceback
 from dotenv import load_dotenv
 # Load environment variables from a .env file, which is where the OpenAI API key is stored.
 load_dotenv(override=True)
@@ -111,101 +112,109 @@ class GAIAAgent:
         Returns:
             str: The final answer from the AI model.
         """
+        print("\n\n---------------\n\n")
         print(f"Agent received question: {question}")
 
-        if file_name and get_filename_ext(file_name) in [".png", ".jpg"]:
-            file = self.client.files.create(
-                file=file_bytes,
-                purpose="vision"
-            )
-            user_content = [
-                {
-                    "type": "input_image",
-                    "file_id": file.id,
-                },
-                {
-                    "type": "input_text",
-                    "text": question,
-                },
+        try:
+            if file_name and get_filename_ext(file_name) in [".png", ".jpg"]:
+                file = self.client.files.create(
+                    file=file_bytes,
+                    purpose="vision"
+                )
+                user_content = [
+                    {
+                        "type": "input_image",
+                        "file_id": file.id,
+                    },
+                    {
+                        "type": "input_text",
+                        "text": question,
+                    },
+                ]
+            elif file_name and get_filename_ext(file_name) in [".py", ".xlsx"]:
+                file = self.client.files.create(
+                    file=file_bytes,
+                    purpose="assistants"
+                )
+                container = self.client.containers.create(name="test", file_ids=[file.id])
+                self.tools.append(
+                    {
+                        "type": "code_interpreter",
+                        "container": container.id
+                    }
+                )
+                user_content = question
+
+            elif file_name and get_filename_ext(file_name) in [".mp3"]:
+                transcript = self.client.audio.transcriptions.create(
+                    model="gpt-4o-transcribe",
+                    file=file_bytes
+                )
+                user_content = f"{question}\n\nHere is the transcript of the audio file: \"{transcript.text}\""
+            else:
+                user_content = question
+
+            # Start the conversation with the system prompt and the user's question.
+            history = [
+                {"role": "developer", "content": INSTRUCTIONS},
+                {"role": "user", "content": user_content}
             ]
-        elif file_name and get_filename_ext(file_name) in [".py", ".xlsx"]:
-            file = self.client.files.create(
-                file=file_bytes,
-                purpose="assistants"
-            )
-            container = self.client.containers.create(name="test", file_ids=[file.id])
-            self.tools.append(
-                {
-                    "type": "code_interpreter",
-                    "container": container.id
-                }
-            )
-            user_content = question
 
-        elif file_name and get_filename_ext(file_name) in [".mp3"]:
-            transcript = self.client.audio.transcriptions.create(
-                model="gpt-4o-transcribe",
-                file=file_bytes
-            )
-            user_content = f"{question}\n\nHere is the transcript of the audio file: \"{transcript.text}\""
-        else:
-            user_content = question
-
-        # Start the conversation with the system prompt and the user's question.
-        history = [
-            {"role": "developer", "content": INSTRUCTIONS},
-            {"role": "user", "content": user_content}
-        ]
-
-        # The main loop for the agent's reasoning and acting process.
-        for i in range(max_iterations):
-            print(f"Iteration {i+1}...")
-            # Call the OpenAI Chat Completions API with the current conversation history and available tools.
-            response = self.client.responses.create(
-                model=self.model,
-                input=history,
-                tools=self.tools,
-                tool_choice="auto",  # Let the model decide when to use tools.
-                temperature=0,       # Set temperature to 0 for deterministic and focused outputs.
-                store=False
-            )
-            
-            response_outputs = response.output
-
-            no_tool_calls = True
-            for output in response_outputs:
-                if output.type != "function_call":
-                    print(f"  - {output.type}")
-                    continue
-
-                no_tool_calls = False
-
-                tool_name = output.name
-                tool_args = json.loads(output.arguments)
-
-                print(f"  - Calling tool: {tool_name} with args: {tool_args}")
-
-                result = call_function(tool_name, tool_args)
-                print(f"    Result: {result}")
+            # The main loop for the agent's reasoning and acting process.
+            for i in range(max_iterations):
+                print(f"Iteration {i+1}...")
+                # Call the OpenAI Chat Completions API with the current conversation history and available tools.
+                response = self.client.responses.create(
+                    model=self.model,
+                    input=history,
+                    tools=self.tools,
+                    tool_choice="auto",  # Let the model decide when to use tools.
+                    temperature=0,       # Set temperature to 0 for deterministic and focused outputs.
+                    store=False
+                )
                 
-                history.append(output)
-                history.append({
-                    "type": "function_call_output",
-                    "call_id": output.call_id,
-                    "output": str(result)
-                })
+                response_outputs = response.output
 
-            if no_tool_calls:
-                answer = response.output_text
-                print(f"Answer: {answer}")
-                for file in self.client.files.list():
-                    self.client.files.delete(file.id)
-                final_answer = answer.split("FINAL ANSWER:")[-1].strip()
-                return final_answer
+                no_tool_calls = True
+                for output in response_outputs:
+                    if output.type != "function_call":
+                        print(f"  - {output.type}")
+                        continue
 
-        for file in self.client.files.list():
-            self.client.files.delete(file.id)
-        return "No answer found."
+                    no_tool_calls = False
+
+                    tool_name = output.name
+                    tool_args = json.loads(output.arguments)
+
+                    print(f"  - Calling tool: {tool_name} with args: {tool_args}")
+
+                    result = call_function(tool_name, tool_args)
+                    print(f"    Result: {result}")
+                    
+                    history.append(output)
+                    history.append({
+                        "type": "function_call_output",
+                        "call_id": output.call_id,
+                        "output": str(result)
+                    })
+
+                if no_tool_calls:
+                    answer = response.output_text
+                    print(f"Answer: {answer}")
+                    for file in self.client.files.list():
+                        self.client.files.delete(file.id)
+                    final_answer = answer.split("FINAL ANSWER:")[-1].strip()
+                    return final_answer
+
+            for file in self.client.files.list():
+                self.client.files.delete(file.id)
+            return "No answer found."
+        
+        except Exception:
+            for file in self.client.files.list():
+                self.client.files.delete(file.id)
+            print(traceback.format_exc())
+            return "No answer found."
 
 # For direct testing of the agent.
 if __name__ == '__main__':
