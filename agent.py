@@ -199,12 +199,12 @@ class GAIAAgent:
                 answer = response.output_text
                 print(f"Answer: {answer}")
                 for file in self.client.files.list():
-                    self.client.files.delete()
+                    self.client.files.delete(file.id)
                 final_answer = answer.split("FINAL ANSWER:")[-1].strip()
                 return final_answer
 
         for file in self.client.files.list():
-            self.client.files.delete()
+            self.client.files.delete(file.id)
         return "No answer found."
 
 # For direct testing of the agent.
