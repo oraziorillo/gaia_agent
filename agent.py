@@ -3,15 +3,17 @@ from dotenv import load_dotenv
 load_dotenv(override=True)
 
 import json
-import openai
 from openai import OpenAI
 from typing import Optional
+
+from utils import get_filename_ext
 
 # Import all tools from their respective modules.
 # This centralized import makes it easy to add or remove tools.
 from tools.calculator import evaluate_expression
 from tools.wikipedia import wikipedia_page_retriever
 from tools.web_search import web_search
+from tools.programmer import write_and_run_code, set_container_id
 
 # Define the system prompt that guides the AI's behavior.
 # This prompt instructs the model on how to structure its responses,
@@ -25,66 +27,9 @@ def call_function(name, args):
         return wikipedia_page_retriever(**args)
     if name == "web_search":
         return web_search(**args)
+    if name == "programmer":
+        return write_and_run_code(**args)
 
-responses_api_supported_file_extensions = [
-    ".c",
-    ".cpp",
-    ".cs",
-    ".css",
-    ".doc",
-    ".docx",
-    ".go",
-    ".html",
-    ".java",
-    ".js",
-    ".json",
-    ".md",
-    ".pdf",
-    ".php",
-    ".pptx",
-    ".py",
-    ".py",
-    ".rb",
-    ".sh",
-    ".tex",
-    ".ts",
-    ".txt",
-]
-
-code_interpreter_supported_file_extensions = [
-    ".c",
-    ".cs",
-    ".cpp",
-    ".csv",
-    ".doc",
-    ".docx",
-    ".html",
-    ".java",
-    ".json",
-    ".md",
-    ".pdf",
-    ".php",
-    ".pptx",
-    ".py",
-    ".py",
-    ".rb",
-    ".tex",
-    ".txt",
-    ".css",
-    ".js",
-    ".sh",
-    ".ts",
-    ".csv",
-    ".jpeg",
-    ".jpg",
-    ".gif",
-    ".pkl",
-    ".png",
-    ".tar",
-    ".xlsx",
-    ".xml",
-    ".zip",
-]
 class GAIAAgent:
     """
     This class implements a ReAct (Reasoning and Acting) agent that uses the OpenAI API.
@@ -157,7 +102,7 @@ class GAIAAgent:
 
         self.history = []
 
-    def __call__(self, question: str, file_name: Optional[str] = None, file_bytes: Optional[bytes] = None, max_iterations: int = 10) -> str:
+    def __call__(self, question: str, file_name: Optional[str] = "", file_bytes: Optional[bytes] = None, max_iterations: int = 10) -> str:
         """
         Executes the ReAct loop to answer a user's question.
 
@@ -170,14 +115,14 @@ class GAIAAgent:
         """
         print(f"Agent received question: {question}")
 
-        if file_name and file_name.split('.')[-1] in responses_api_supported_file_extensions:
+        if file_name and get_filename_ext(file_name) in [".png", ".jpg"]:
             file = self.client.files.create(
-                file_bytes,
-                purpose="user_data"
+                file=file_bytes,
+                purpose="vision"
             )
             user_content = [
                 {
-                    "type": "input_file",
+                    "type": "input_image",
                     "file_id": file.id,
                 },
                 {
@@ -185,10 +130,21 @@ class GAIAAgent:
                     "text": question,
                 },
             ]
-        elif file_name and file_name.split('.')[-1] in code_interpreter_supported_file_extensions:
-            # TODO: Implement code interpreter logic here
-            pass
-        elif file_name and file_name.endswith("mp3"):
+        elif file_name and get_filename_ext(file_name) in [".py", ".xlsx"]:
+            file = self.client.files.create(
+                file=file_bytes,
+                purpose="assistants"
+            )
+            container = self.client.containers.create(name="test", file_ids=[file.id])
+            self.tools.append(
+                {
+                    "type": "code_interpreter",
+                    "container": container.id
+                }
+            )
+            user_content = question
+
+        elif file_name and get_filename_ext(file_name) in [".mp3"]:
             transcript = self.client.audio.transcriptions.create(
                 model="gpt-4o-transcribe",
                 file=file_bytes
@@ -207,7 +163,6 @@ class GAIAAgent:
         # The main loop for the agent's reasoning and acting process.
         for i in range(max_iterations):
             print(f"Iteration {i+1}...")
-            
             # Call the OpenAI Chat Completions API with the current conversation history and available tools.
             response = self.client.responses.create(
                 model=self.model,
@@ -223,6 +178,7 @@ class GAIAAgent:
             no_tool_calls = True
             for output in response_outputs:
                 if output.type != "function_call":
+                    print(f"  - {output.type}")
                     continue
 
                 no_tool_calls = False
