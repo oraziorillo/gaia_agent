@@ -27,8 +27,6 @@ def call_function(name, args):
         return wikipedia_page_retriever(**args)
     if name == "web_search":
         return web_search(**args)
-    if name == "programmer":
-        return write_and_run_code(**args)
 
 class GAIAAgent:
     """
@@ -151,7 +149,6 @@ class GAIAAgent:
             )
             user_content = f"{question}\n\nHere is the transcript of the audio file: \"{transcript.text}\""
         else:
-            file = None
             user_content = question
 
         # Start the conversation with the system prompt and the user's question.
@@ -199,12 +196,15 @@ class GAIAAgent:
                 })
 
             if no_tool_calls:
-                final_answer = response.output_text
-                print(f"Agent returning final answer: {final_answer}")
-                if file: self.client.files.delete(file.id)
+                answer = response.output_text
+                print(f"Answer: {answer}")
+                for file in self.client.files.list():
+                    self.client.files.delete()
+                final_answer = answer.split("FINAL ANSWER:")[-1].strip()
                 return final_answer
 
-        if file: self.client.files.delete(file.id)
+        for file in self.client.files.list():
+            self.client.files.delete()
         return "No answer found."
 
 # For direct testing of the agent.
