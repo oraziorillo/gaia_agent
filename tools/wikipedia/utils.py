@@ -1,3 +1,4 @@
+import os
 import openai
 from typing import List
 from wikipedia import WikipediaPage
@@ -5,7 +6,7 @@ from bs4 import BeautifulSoup
 from html_to_markdown import convert_to_markdown
 from .prompts import entity_analysis_prompt, synthesis_prompt
 
-client = openai.OpenAI()
+client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def identify_wikipedia_entities(query: str) -> List[str]:
     """
@@ -20,7 +21,7 @@ def identify_wikipedia_entities(query: str) -> List[str]:
     prompt = entity_analysis_prompt.format(query=query)
     
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1",
         messages=[
             {"role": "user", "content": prompt}
         ],
@@ -62,7 +63,7 @@ def synthesize_information(query: str, context: str) -> str:
     prompt = synthesis_prompt.format(query=query, context=context)
     
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         messages=[
             {"role": "user", "content": prompt}
         ],

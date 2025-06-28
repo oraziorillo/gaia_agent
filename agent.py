@@ -1,3 +1,4 @@
+import os
 from dotenv import load_dotenv
 # Load environment variables from a .env file, which is where the OpenAI API key is stored.
 load_dotenv(override=True)
@@ -36,7 +37,7 @@ class GAIAAgent:
     It orchestrates a conversation with an AI model, allowing it to use tools to answer questions.
     """
 
-    def __init__(self, model: str = "gpt-4o-mini"):
+    def __init__(self, model: str = "gpt-4.1"):
         """
         Initializes the agent.
 
@@ -44,7 +45,7 @@ class GAIAAgent:
             model (str): The name of the OpenAI model to use.
         """
         # Initialize the OpenAI client, which is the main interface for interacting with the API.
-        self.client = OpenAI()
+        self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         self.model = model
         
         # Convert the LangChain tools into the JSON schema format that the OpenAI API expects.
