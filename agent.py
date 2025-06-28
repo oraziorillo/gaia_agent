@@ -14,7 +14,6 @@ from utils import get_filename_ext
 from tools.calculator import evaluate_expression
 from tools.wikipedia import wikipedia_page_retriever
 from tools.web_search import web_search
-from tools.programmer import write_and_run_code, set_container_id
 
 # Define the system prompt that guides the AI's behavior.
 # This prompt instructs the model on how to structure its responses,
