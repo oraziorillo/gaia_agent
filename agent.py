@@ -117,10 +117,13 @@ class GAIAAgent:
 
         try:
             if file_name and get_filename_ext(file_name) in [".png", ".jpg"]:
+                with open(file_name, "wb") as fp:
+                    fp.write(file_bytes)
                 file = self.client.files.create(
-                    file=file_bytes,
+                    file=open(file_name, "rb"),
                     purpose="vision"
                 )
+                os.remove(file_name)
                 user_content = [
                     {
                         "type": "input_image",
@@ -132,10 +135,13 @@ class GAIAAgent:
                     },
                 ]
             elif file_name and get_filename_ext(file_name) in [".py", ".xlsx"]:
+                with open(file_name, "wb") as fp:
+                    fp.write(file_bytes)
                 file = self.client.files.create(
-                    file=file_bytes,
+                    file=open(file_name, "rb"),
                     purpose="assistants"
                 )
+                os.remove(file_name)
                 container = self.client.containers.create(name="test", file_ids=[file.id])
                 self.tools.append(
                     {
@@ -146,10 +152,14 @@ class GAIAAgent:
                 user_content = question
 
             elif file_name and get_filename_ext(file_name) in [".mp3"]:
+                with open(file_name, "wb") as fp:
+                    fp.write(file_bytes)
                 transcript = self.client.audio.transcriptions.create(
                     model="gpt-4o-transcribe",
-                    file=file_bytes
+                    file=open(file_name, "rb"),
+                    temperature=0
                 )
+                os.remove(file_name)
                 user_content = f"{question}\n\nHere is the transcript of the audio file: \"{transcript.text}\""
             else:
                 user_content = question
