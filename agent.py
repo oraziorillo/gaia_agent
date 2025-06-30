@@ -15,6 +15,7 @@ from utils import get_filename_ext
 from tools.calculator import evaluate_expression
 from tools.wikipedia import wikipedia_page_retriever
 from tools.web_search import web_search
+from tools.youtube import analyze_youtube_video
 
 # Define the system prompt that guides the AI's behavior.
 # This prompt instructs the model on how to structure its responses,
@@ -28,6 +29,8 @@ def call_function(name, args):
         return wikipedia_page_retriever(**args)
     if name == "web_search":
         return web_search(**args)
+    if name == "analyze_youtube_video":
+        return analyze_youtube_video(**args)
 
 class GAIAAgent:
     """
@@ -95,6 +98,26 @@ class GAIAAgent:
                         }
                     },
                     "required": ["question"]
+                }
+            },
+            # Youtube video analyzer tool
+            {
+                "type": "function",
+                "name": "analyze_youtube_video",
+                "description": "Analyzes the content of a YouTube video and answers a question about it.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "question": {
+                            "type": "string",
+                            "description": "The specific question to ask about the content of the YouTube video."
+                        },
+                        "youtube_url": {
+                            "type": "string",
+                            "description": "The URL of the YouTube video to analyze."
+                        }
+                    },
+                    "required": ["question", "youtube_url"]
                 }
             }
         ]
