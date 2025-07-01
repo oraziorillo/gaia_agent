@@ -139,7 +139,7 @@ class GAIAAgent:
         print(f"Agent received question: {question}")
 
         try:
-            if file_name and get_filename_ext(file_name) in [".png", ".jpg"]:
+            if file_name and get_filename_ext(file_name) in [".png", ".jpg", ".jpeg", ".webp", ".gif"]:
                 with open(file_name, "wb") as fp:
                     fp.write(file_bytes)
                 file = self.client.files.create(
@@ -157,7 +157,7 @@ class GAIAAgent:
                         "text": question,
                     },
                 ]
-            elif file_name and get_filename_ext(file_name) in [".py", ".xlsx"]:
+            elif file_name and get_filename_ext(file_name) in [".py", ".xlsx", ".csv"]:
                 with open(file_name, "wb") as fp:
                     fp.write(file_bytes)
                 file = self.client.files.create(
@@ -248,13 +248,3 @@ class GAIAAgent:
                 self.client.files.delete(file.id)
             print(traceback.format_exc())
             return "No answer found."
-
-# For direct testing of the agent.
-if __name__ == '__main__':
-    agent = GAIAAgent()
-    # Example question to test the agent's capabilities.
-    question = "What is the square root of the number of letters in the name of the current US president?"
-    answer = agent(question)
-    print("---")
-    print(f"Question: {question}")
-    print(f"Final Answer: {answer}")
