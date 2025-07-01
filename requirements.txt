@@ -7,5 +7,4 @@ html-to-markdown
 beautifulsoup4
 langchain
 langchain-core
-langchain-tavily
 google-genai
