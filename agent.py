@@ -13,7 +13,7 @@ from utils import get_filename_ext
 # Import all tools from their respective modules.
 # This centralized import makes it easy to add or remove tools.
 from tools.calculator import evaluate_expression
-from tools.wikipedia import wikipedia_page_retriever
+from tools.wikipedia import wikipedia_retriever
 from tools.web_search import web_search
 from tools.youtube import analyze_youtube_video
 
@@ -26,7 +26,7 @@ def call_function(name, args):
     if name == "evaluate_expression":
         return evaluate_expression(**args)
     if name == "wikipedia_page_retriever":
-        return wikipedia_page_retriever(**args)
+        return wikipedia_retriever(**args)
     if name == "web_search":
         return web_search(**args)
     if name == "analyze_youtube_video":
@@ -72,7 +72,7 @@ class GAIAAgent:
             {
                 "type": "function",
                 "name": "wikipedia_page_retriever",
-                "description": "Tool that fetches any pages from Wikipedia.",
+                "description": "Tool that searches information on Wikipedia.",
                 "parameters": {
                     "type": "object",
                     "properties": {
