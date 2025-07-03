@@ -51,7 +51,7 @@ class ChromaClient:
             query_texts=[query],
             n_results=n_results
         )
-        return results['documents']          
+        return results['documents'][0]         
 
     def delete_collection(self, collection_name):
         self.client.delete_collection(collection_name)

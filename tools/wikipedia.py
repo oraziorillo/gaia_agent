@@ -1,5 +1,4 @@
 import re
-import uuid
 from typing import Iterable
 from langchain_core.documents import Document
 from services.chroma import ChromaClient
@@ -12,7 +11,7 @@ def _load_wikipedia_data(query: str, lang: str = 'en', load_max_docs: int = 2):
     data = loader.load()
     return data
 
-def _split_text_into_chunks(data: Iterable[Document], chunk_size=1024):
+def _split_text_into_chunks(data: Iterable[Document], chunk_size=512):
     from langchain.text_splitter import RecursiveCharacterTextSplitter
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=0)
     chunks = text_splitter.split_documents(data)
@@ -43,4 +42,4 @@ def wikipedia_retriever(query: str):
     )
     chroma_client.delete_collection(collection_name)
 
-    return results
+    return "\n\n".join(results)
