@@ -77,21 +77,26 @@ def run_and_submit_all( profile: gr.OAuthProfile | None):
         task_id = item.get("task_id")
         question_text = item.get("question")
         file_name = item.get("file_name")
-        if file_name:
-            file_response = requests.get(f'{files_url}/{task_id}')
-            file = file_response.content
-        else:
-            file = None
+
         if not task_id or question_text is None:
             print(f"Skipping item with missing task_id or question: {item}")
             continue
+
+        if file_name:
+            file_response = requests.get(f'{files_url}/{task_id}')
+            with open(file_name, "wb") as fp:
+                fp.write(file_response.content)
+        
         try:
-            submitted_answer = agent(question_text, file_name, file)
+            submitted_answer = agent(question_text, file_name)
             answers_payload.append({"task_id": task_id, "submitted_answer": submitted_answer})
             results_log.append({"Task ID": task_id, "Question": question_text, "Submitted Answer": submitted_answer})
         except Exception as e:
             print(f"Error running agent on task {task_id}: {e}")
             results_log.append({"Task ID": task_id, "Question": question_text, "Submitted Answer": f"AGENT ERROR: {e}"})
+
+        if file_name:
+            os.remove(file_name)
 
     if not answers_payload:
         print("Agent did not produce any answers to submit.")

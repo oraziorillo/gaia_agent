@@ -1,17 +1,16 @@
 import os
-import traceback
-from dotenv import load_dotenv
-# Load environment variables from a .env file, which is where the OpenAI API key is stored.
-load_dotenv(override=True)
-
 import json
-from openai import OpenAI
+import traceback
 from typing import Optional
+from openai import OpenAI
+
+# Load environment variables from a .env file, which is where the OpenAI API key is stored.
+from dotenv import load_dotenv
+load_dotenv(override=True)
 
 from utils import get_filename_ext
 
 # Import all tools from their respective modules.
-# This centralized import makes it easy to add or remove tools.
 from tools.calculator import evaluate_expression
 from tools.wikipedia import wikipedia_retriever
 from tools.web_search import web_search
@@ -22,7 +21,7 @@ from tools.youtube import analyze_youtube_video
 # ensuring the final output is in a consistent and parsable format.
 INSTRUCTIONS = "You are a general AI assistant. I will ask you a question. Report your thoughts, and finish your answer with the following template: FINAL ANSWER: [YOUR FINAL ANSWER]. YOUR FINAL ANSWER should be a number OR as few words as possible OR a comma separated list of numbers and/or strings. If you are asked for a number, don't use comma to write your number neither use units such as $ or percent sign unless specified otherwise. If you are asked for a string, don't use articles, neither abbreviations (e.g. for cities), and write the digits in plain text unless specified otherwise. If you are asked for a comma separated list, apply the above rules depending of whether the element to be put in the list is a number or a string."
 
-def call_function(name, args):
+def call_function(name, args) -> str:
     if name == "evaluate_expression":
         return evaluate_expression(**args)
     if name == "wikipedia_page_retriever":
@@ -46,10 +45,9 @@ class GAIAAgent:
             model (str): The name of the OpenAI model to use.
         """
         # Initialize the OpenAI client, which is the main interface for interacting with the API.
-        self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        self.client = OpenAI()
         self.model = model
         
-        # Convert the LangChain tools into the JSON schema format that the OpenAI API expects.
         # This schema informs the model about the available tools, their names, descriptions, and arguments.
         self.tools = [
             # Calculator tool
@@ -124,12 +122,19 @@ class GAIAAgent:
 
         self.history = []
 
-    def __call__(self, question: str, file_name: Optional[str] = "", file_bytes: Optional[bytes] = None, max_iterations: int = 10) -> str:
+    def __call__(
+        self,
+        question: str, 
+        file_path: str, 
+        max_iterations: int = 10
+    ) -> str:
         """
         Executes the ReAct loop to answer a user's question.
 
         Args:
             question (str): The user's question.
+            file_name (str): The name of the file passed as input if it exists.
+            file_bytes (bytes): The bytes of the file in input.
             max_iterations (int): The maximum number of tool-use iterations to prevent infinite loops.
 
         Returns:
@@ -139,14 +144,11 @@ class GAIAAgent:
         print(f"Agent received question: {question}")
 
         try:
-            if file_name and get_filename_ext(file_name) in [".png", ".jpg", ".jpeg", ".webp", ".gif"]:
-                with open(file_name, "wb") as fp:
-                    fp.write(file_bytes)
+            if file_path and get_filename_ext(file_path) in [".png", ".jpg", ".jpeg", ".webp", ".gif"]:
                 file = self.client.files.create(
-                    file=open(file_name, "rb"),
+                    file=open(file_path, "rb"),
                     purpose="vision"
                 )
-                os.remove(file_name)
                 user_content = [
                     {
                         "type": "input_image",
@@ -157,14 +159,12 @@ class GAIAAgent:
                         "text": question,
                     },
                 ]
-            elif file_name and get_filename_ext(file_name) in [".py", ".xlsx", ".csv"]:
-                with open(file_name, "wb") as fp:
-                    fp.write(file_bytes)
+
+            elif file_path and get_filename_ext(file_path) in [".py", ".xlsx", ".csv"]:
                 file = self.client.files.create(
-                    file=open(file_name, "rb"),
+                    file=open(file_path, "rb"),
                     purpose="assistants"
                 )
-                os.remove(file_name)
                 container = self.client.containers.create(name="test", file_ids=[file.id])
                 self.tools.append(
                     {
@@ -174,16 +174,14 @@ class GAIAAgent:
                 )
                 user_content = question
 
-            elif file_name and get_filename_ext(file_name) in [".mp3"]:
-                with open(file_name, "wb") as fp:
-                    fp.write(file_bytes)
+            elif file_path and get_filename_ext(file_path) in [".mp3"]:
                 transcript = self.client.audio.transcriptions.create(
                     model="gpt-4o-transcribe",
-                    file=open(file_name, "rb"),
+                    file=open(file_path, "rb"),
                     temperature=0
                 )
-                os.remove(file_name)
                 user_content = f"{question}\n\nHere is the transcript of the audio file: \"{transcript.text}\""
+
             else:
                 user_content = question
 
@@ -222,7 +220,8 @@ class GAIAAgent:
                     print(f"  - Calling tool: {tool_name} with args: {tool_args}")
 
                     result = call_function(tool_name, tool_args)
-                    print(f"    Result: {result}")
+                    continues_postfix = "..."
+                    print(f"    Result: {result if len(result) < 150 - len else result[:150 - len(continues_postfix)] + continues_postfix}")
                     
                     history.append(output)
                     history.append({
