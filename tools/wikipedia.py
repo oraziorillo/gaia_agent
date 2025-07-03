@@ -7,7 +7,7 @@ from services.chroma import ChromaClient
 chroma_client = ChromaClient()
 
 def _load_wikipedia_data(query: str, lang: str = 'en', load_max_docs: int = 2):
-    from langchain.document_loaders import WikipediaLoader
+    from langchain_community.document_loaders import WikipediaLoader
     loader = WikipediaLoader(query=query, lang=lang, load_max_docs=load_max_docs)
     data = loader.load()
     return data
