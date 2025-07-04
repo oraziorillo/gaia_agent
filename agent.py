@@ -1,14 +1,13 @@
 import os
 import json
 import traceback
-from typing import Optional
 from openai import OpenAI
 
 # Load environment variables from a .env file, which is where the OpenAI API key is stored.
 from dotenv import load_dotenv
 load_dotenv(override=True)
 
-from utils import get_filename_ext
+from utils import get_filename_ext, vprint
 
 # Import all tools from their respective modules.
 from tools.calculator import evaluate_expression
@@ -24,7 +23,7 @@ INSTRUCTIONS = "You are a general AI assistant. I will ask you a question. Repor
 def call_function(name, args) -> str:
     if name == "evaluate_expression":
         return evaluate_expression(**args)
-    if name == "wikipedia_page_retriever":
+    if name == "wikipedia_retriever":
         return wikipedia_retriever(**args)
     if name == "web_search":
         return web_search(**args)
@@ -37,7 +36,7 @@ class GAIAAgent:
     It orchestrates a conversation with an AI model, allowing it to use tools to answer questions.
     """
 
-    def __init__(self, model: str = "gpt-4.1"):
+    def __init__(self, model: str = "gpt-4.1-mini"):
         """
         Initializes the agent.
 
@@ -69,7 +68,7 @@ class GAIAAgent:
             # Wikipedia tool
             {
                 "type": "function",
-                "name": "wikipedia_page_retriever",
+                "name": "wikipedia_retriever",
                 "description": "Tool that searches information on Wikipedia.",
                 "parameters": {
                     "type": "object",
@@ -140,8 +139,7 @@ class GAIAAgent:
         Returns:
             str: The final answer from the AI model.
         """
-        print("\n\n---------------\n\n")
-        print(f"Agent received question: {question}")
+        vprint(f"> Agent received question: {question}")
 
         try:
             if file_path and get_filename_ext(file_path) in [".png", ".jpg", ".jpeg", ".webp", ".gif"]:
@@ -193,8 +191,8 @@ class GAIAAgent:
 
             # The main loop for the agent's reasoning and acting process.
             for i in range(max_iterations):
-                print(f"Iteration {i+1}...")
-                # Call the OpenAI Chat Completions API with the current conversation history and available tools.
+                vprint(f"{' ' * 2}Iteration {i+1}...")
+                # Call the OpenAI Response API with the current conversation history and available tools.
                 response = self.client.responses.create(
                     model=self.model,
                     input=history,
@@ -209,7 +207,7 @@ class GAIAAgent:
                 no_tool_calls = True
                 for output in response_outputs:
                     if output.type != "function_call":
-                        print(f"  - {output.type}")
+                        vprint(f"{' ' * 4}- {output.type}")
                         continue
 
                     no_tool_calls = False
@@ -217,11 +215,12 @@ class GAIAAgent:
                     tool_name = output.name
                     tool_args = json.loads(output.arguments)
 
-                    print(f"  - Calling tool: {tool_name} with args: {tool_args}")
+                    vprint(f"{' ' * 4}- Calling tool: {tool_name} with args: {tool_args}")
 
                     result = call_function(tool_name, tool_args)
-                    continues_postfix = "..."
-                    print(f"    Result: {result if len(result) < 150 - len else result[:150 - len(continues_postfix)] + continues_postfix}")
+                    line_length = 120
+                    postfix = " [...]" if result[119].isalnum() else "[...]"
+                    vprint(f"{' ' * 6}Result: {repr(result if len(result) < line_length else result[:line_length] + postfix)}")
                     
                     history.append(output)
                     history.append({
@@ -232,7 +231,7 @@ class GAIAAgent:
 
                 if no_tool_calls:
                     answer = response.output_text
-                    print(f"Answer: {answer}")
+                    vprint(f"{' ' * 2}Answer: {repr(answer)}")
                     for file in self.client.files.list():
                         self.client.files.delete(file.id)
                     final_answer = answer.split("FINAL ANSWER:")[-1].strip()
