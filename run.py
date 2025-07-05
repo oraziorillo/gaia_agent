@@ -50,7 +50,7 @@ def main():
         done = True
         t.join()
 
-    print(f"Agent response: {response}")
+    print(f"Final answer: {response}")
 
 if __name__ == "__main__":
     main()
