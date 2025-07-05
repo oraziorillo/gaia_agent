@@ -1,4 +1,3 @@
-import os
 import json
 import traceback
 from openai import OpenAI
@@ -21,6 +20,16 @@ from tools.youtube import analyze_youtube_video
 INSTRUCTIONS = "You are a general AI assistant. I will ask you a question. Report your thoughts, and finish your answer with the following template: FINAL ANSWER: [YOUR FINAL ANSWER]. YOUR FINAL ANSWER should be a number OR as few words as possible OR a comma separated list of numbers and/or strings. If you are asked for a number, don't use comma to write your number neither use units such as $ or percent sign unless specified otherwise. If you are asked for a string, don't use articles, neither abbreviations (e.g. for cities), and write the digits in plain text unless specified otherwise. If you are asked for a comma separated list, apply the above rules depending of whether the element to be put in the list is a number or a string."
 
 def call_function(name, args) -> str:
+    """
+    Dispatches function calls to the appropriate tool based on the function name.
+    
+    Args:
+        name (str): The name of the function/tool to call.
+        args (dict): Dictionary of arguments to pass to the function.
+        
+    Returns:
+        str: The result from the called function.
+    """
     if name == "evaluate_expression":
         return evaluate_expression(**args)
     if name == "wikipedia_retriever":
@@ -119,6 +128,7 @@ class GAIAAgent:
             }
         ]
 
+        # Initialize conversation history for potential multi-turn conversations
         self.history = []
 
     def __call__(
@@ -132,8 +142,7 @@ class GAIAAgent:
 
         Args:
             question (str): The user's question.
-            file_name (str): The name of the file passed as input if it exists.
-            file_bytes (bytes): The bytes of the file in input.
+            file_path (str): The path to the file passed as input if it exists.
             max_iterations (int): The maximum number of tool-use iterations to prevent infinite loops.
 
         Returns:
@@ -142,7 +151,9 @@ class GAIAAgent:
         vprint(f"> Agent received question: {question}")
 
         try:
+            # Handle different file types by preparing appropriate content format
             if file_path and get_filename_ext(file_path) in [".png", ".jpg", ".jpeg", ".webp", ".gif"]:
+                # For image files: upload for vision processing
                 file = self.client.files.create(
                     file=open(file_path, "rb"),
                     purpose="vision"
@@ -159,11 +170,13 @@ class GAIAAgent:
                 ]
 
             elif file_path and get_filename_ext(file_path) in [".py", ".xlsx", ".csv"]:
+                # For code/data files: create a container for code interpretation
                 file = self.client.files.create(
                     file=open(file_path, "rb"),
                     purpose="assistants"
                 )
                 container = self.client.containers.create(name="test", file_ids=[file.id])
+                # Add code interpreter tool dynamically for this session
                 self.tools.append(
                     {
                         "type": "code_interpreter",
@@ -173,6 +186,7 @@ class GAIAAgent:
                 user_content = question
 
             elif file_path and get_filename_ext(file_path) in [".mp3"]:
+                # For audio files: transcribe and include transcript in the question
                 transcript = self.client.audio.transcriptions.create(
                     model="gpt-4o-transcribe",
                     file=open(file_path, "rb"),
@@ -181,6 +195,7 @@ class GAIAAgent:
                 user_content = f"{question}\n\nHere is the transcript of the audio file: \"{transcript.text}\""
 
             else:
+                # No file provided or unsupported file type
                 user_content = question
 
             # Start the conversation with the system prompt and the user's question.
@@ -204,24 +219,32 @@ class GAIAAgent:
                 
                 response_outputs = response.output
 
+                # Check if any function calls were made in this iteration
                 no_tool_calls = True
                 for output in response_outputs:
+                    # Skip non-function outputs (like text responses)
                     if output.type != "function_call":
                         vprint(f"{' ' * 4}- {output.type}")
                         continue
 
+                    # We found at least one function call
                     no_tool_calls = False
 
+                    # Extract function call details
                     tool_name = output.name
                     tool_args = json.loads(output.arguments)
 
                     vprint(f"{' ' * 4}- Calling tool: {tool_name} with args: {tool_args}")
 
+                    # Execute the function call
                     result = call_function(tool_name, tool_args)
+                    
+                    # Truncate very long results for logging purposes
                     line_length = 120
                     postfix = " [...]" if result[119].isalnum() else "[...]"
                     vprint(f"{' ' * 6}Result: {repr(result if len(result) < line_length else result[:line_length] + postfix)}")
                     
+                    # Add the function call and its result to conversation history
                     history.append(output)
                     history.append({
                         "type": "function_call_output",
@@ -229,19 +252,24 @@ class GAIAAgent:
                         "output": str(result)
                     })
 
+                # If no tools were called, the model has provided a final answer
                 if no_tool_calls:
                     answer = response.output_text
                     vprint(f"{' ' * 2}Answer: {repr(answer)}")
+                    # Clean up any uploaded files
                     for file in self.client.files.list():
                         self.client.files.delete(file.id)
+                    # Extract the final answer from the model's response
                     final_answer = answer.split("FINAL ANSWER:")[-1].strip()
                     return final_answer
 
+            # If we've exhausted all iterations without a final answer, clean up and return default
             for file in self.client.files.list():
                 self.client.files.delete(file.id)
             return "No answer found."
         
         except Exception:
+            # Clean up any uploaded files in case of errors
             for file in self.client.files.list():
                 self.client.files.delete(file.id)
             print(traceback.format_exc())
