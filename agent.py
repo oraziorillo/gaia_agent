@@ -256,21 +256,28 @@ class GAIAAgent:
                 if no_tool_calls:
                     answer = response.output_text
                     vprint(f"{' ' * 2}Answer: {repr(answer)}")
-                    # Clean up any uploaded files
-                    for file in self.client.files.list():
-                        self.client.files.delete(file.id)
                     # Extract the final answer from the model's response
                     final_answer = answer.split("FINAL ANSWER:")[-1].strip()
                     return final_answer
 
-            # If we've exhausted all iterations without a final answer, clean up and return default
-            for file in self.client.files.list():
-                self.client.files.delete(file.id)
             return "No answer found."
-        
-        except Exception:
-            # Clean up any uploaded files in case of errors
-            for file in self.client.files.list():
-                self.client.files.delete(file.id)
+    
+        except Exception as e:
             print(traceback.format_exc())
             return "No answer found."
+        
+        finally:
+            self.cleanup()
+
+        
+    def cleanup(self):
+        """
+        Cleans up any resources used by the agent, such as uploaded files or containers.
+        """
+        # Delete all uploaded files
+        for file in self.client.files.list():
+            self.client.files.delete(file.id)
+        
+        # Delete all containers
+        for container in self.client.containers.list():
+            self.client.containers.delete(container.id)
