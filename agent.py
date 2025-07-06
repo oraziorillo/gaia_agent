@@ -1,4 +1,5 @@
 import json
+import os
 import traceback
 from openai import OpenAI
 
@@ -53,7 +54,7 @@ class GAIAAgent:
             model (str): The name of the OpenAI model to use.
         """
         # Initialize the OpenAI client, which is the main interface for interacting with the API.
-        self.client = OpenAI()
+        self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         self.model = model
         
         # This schema informs the model about the available tools, their names, descriptions, and arguments.
