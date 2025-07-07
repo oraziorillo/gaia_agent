@@ -7,7 +7,7 @@ from openai import OpenAI
 from dotenv import load_dotenv
 load_dotenv(override=True)
 
-from utils import get_filename_ext, vprint
+from utils import FileStrategy, get_filename_ext, vprint, EXT_TO_STRATEGY
 
 # Import all tools from their respective modules.
 from tools.calculator import evaluate_expression
@@ -151,49 +151,15 @@ class GAIAAgent:
         """
         vprint(f"> Agent received question: {question}")
 
-        try:
-            # Handle different file types by preparing appropriate content format
-            if file_path and get_filename_ext(file_path) in [".png", ".jpg", ".jpeg", ".webp", ".gif"]:
-                # For image files: upload for vision processing
-                file = self.client.files.create(
-                    file=open(file_path, "rb"),
-                    purpose="vision"
-                )
+        try:            
+            if file_path:
                 user_content = [
-                    {
-                        "type": "input_image",
-                        "file_id": file.id,
-                    },
+                    self._handle_file(file_path),
                     {
                         "type": "input_text",
-                        "text": question,
-                    },
-                ]
-
-            elif file_path and get_filename_ext(file_path) in [".py", ".xlsx", ".csv"]:
-                # For code/data files: create a container for code interpretation
-                file = self.client.files.create(
-                    file=open(file_path, "rb"),
-                    purpose="assistants"
-                )
-                container = self.client.containers.create(name="test", file_ids=[file.id])
-                # Add code interpreter tool dynamically for this session
-                self.tools.append(
-                    {
-                        "type": "code_interpreter",
-                        "container": container.id
+                        "text": question
                     }
-                )
-                user_content = question
-
-            elif file_path and get_filename_ext(file_path) in [".mp3"]:
-                # For audio files: transcribe and include transcript in the question
-                transcript = self.client.audio.transcriptions.create(
-                    model="gpt-4o-transcribe",
-                    file=open(file_path, "rb"),
-                    temperature=0
-                )
-                user_content = f"{question}\n\nHere is the transcript of the audio file: \"{transcript.text}\""
+                ]
 
             else:
                 # No file provided or unsupported file type
@@ -270,7 +236,56 @@ class GAIAAgent:
         finally:
             self.cleanup()
 
+    def _handle_file(self, file_path: str) -> dict:
+        """
+        Handles the file passed as input.
+
+        Returns:
+            dict: A dictionary containing the additional content to be passed to the model.
+        """
+        # Handle different file types by preparing appropriate content format
+        if EXT_TO_STRATEGY[get_filename_ext(file_path)] == FileStrategy.VISION:
+            # For image files: upload for vision processing
+            file = self.client.files.create(
+                file=open(file_path, "rb"),
+                purpose="vision"
+            )
+            return {
+                "type": "input_image",
+                "file_id": file.id,
+            }
         
+        elif EXT_TO_STRATEGY[get_filename_ext(file_path)] == FileStrategy.TRANSCRIPTION:
+            # For audio files: transcribe and include transcript in the question
+            transcript = self.client.audio.transcriptions.create(
+                model="gpt-4o-transcribe",
+                file=open(file_path, "rb"),
+                temperature=0
+            )
+            return {
+                "type": "input_text",
+                "text": f"### Transcript of the audio file: \"{transcript.text}\""
+            }
+
+        else:
+            # For code/data files: create a container for code interpretation
+            file = self.client.files.create(
+                file=open(file_path, "rb"),
+                purpose="assistants"
+            )
+            container = self.client.containers.create(name="code_interpreter")
+            self.tools.append(
+                {
+                    "type": "code_interpreter",
+                    "container": container.id
+                }
+            )
+            return {
+                "type": "input_file",
+                "file_id": file.id
+            }
+
+            
     def cleanup(self):
         """
         Cleans up any resources used by the agent, such as uploaded files or containers.
