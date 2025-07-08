@@ -11,9 +11,14 @@ from utils import FileStrategy, get_filename_ext, vprint, EXT_TO_STRATEGY
 
 # Import all tools from their respective modules.
 from tools.calculator import evaluate_expression
-from tools.wikipedia import wikipedia_retriever
+from tools.wikipedia_retrieval import (
+    wikipedia_page_search,
+    wikipedia_page_sections_retriever, 
+    wikipedia_section_content_retriever,
+    wikipedia_similarity_retriever,
+)
 from tools.web_search import web_search
-from tools.youtube import analyze_youtube_video
+from tools.youtube_video_analysis import analyze_youtube_video
 
 # Define the system prompt that guides the AI's behavior.
 # This prompt instructs the model on how to structure its responses,
@@ -33,8 +38,14 @@ def call_function(name, args) -> str:
     """
     if name == "evaluate_expression":
         return evaluate_expression(**args)
-    if name == "wikipedia_retriever":
-        return wikipedia_retriever(**args)
+    if name == "wikipedia_page_search":
+        return wikipedia_page_search(**args)
+    if name == "wikipedia_page_sections_retriever":
+        return wikipedia_page_sections_retriever(**args)
+    if name == "wikipedia_section_content_retriever":
+        return wikipedia_section_content_retriever(**args)
+    if name == "wikipedia_similarity_retriever":
+        return wikipedia_similarity_retriever(**args)
     if name == "web_search":
         return web_search(**args)
     if name == "analyze_youtube_video":
@@ -75,20 +86,76 @@ class GAIAAgent:
                     "required": ["expression"]
                 }
             },
-            # Wikipedia tool
+            # Wikipedia page search tool
             {
                 "type": "function",
-                "name": "wikipedia_retriever",
-                "description": "Tool that searches information on Wikipedia.",
+                "name": "wikipedia_page_search",
+                "description": "Tool that searches for a Wikipedia page based on a query.",
                 "parameters": {
                     "type": "object",
                     "properties": {
                         "query": {
                             "type": "string",
-                            "description": "The search query for Wikipedia."
+                            "description": "The query to search for a Wikipedia page."
                         }
                     },
                     "required": ["query"]
+                }
+            },
+            # Wikipedia page sections retriever tool
+            {
+                "type": "function",
+                "name": "wikipedia_page_sections_retriever",
+                "description": "Tool that retrieves the sections of a specific Wikipedia page.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "page_title": {
+                            "type": "string",
+                            "description": "The title of the Wikipedia page to retrieve the sections from."
+                        }
+                    },
+                    "required": ["page_title"]
+                }
+            },
+            # Wikipedia section content retriever tool
+            {
+                "type": "function",
+                "name": "wikipedia_section_content_retriever",
+                "description": "Tool that retrieves the content of a specific section of a specific Wikipedia page.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "page_title": {
+                            "type": "string",
+                            "description": "The title of the Wikipedia page to retrieve the section content from."
+                        },
+                        "section_title": {
+                            "type": "string",
+                            "description": "The title of the section to retrieve the content from."
+                        }
+                    },
+                    "required": ["page_title", "section_title"]
+                }
+            },
+            # Wikipedia similarity retriever tool
+            {
+                "type": "function",
+                "name": "wikipedia_similarity_retriever",
+                "description": "Tool that retrieves information on Wikipedia based on similarity search with the query.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "page_title": {
+                            "type": "string",
+                            "description": "The title of the Wikipedia page to retrieve the information from."
+                        },
+                        "query": {
+                            "type": "string",
+                            "description": "The search query for Wikipedia."
+                        }
+                    },
+                    "required": ["page_title", "query"]
                 }
             },
             # Web search tool

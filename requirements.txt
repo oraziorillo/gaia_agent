@@ -9,3 +9,4 @@ langchain
 langchain-core
 google-genai
 chroma
+bs4
