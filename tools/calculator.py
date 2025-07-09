@@ -2,7 +2,7 @@ import ast
 import operator
 import math
 from typing import Union
-from langchain.tools import tool
+from tools.tool_registry import register_tool
 
 class SafeMathEvaluator:
     """
@@ -133,6 +133,21 @@ class SafeMathEvaluator:
 # Initialize the evaluator
 math_evaluator = SafeMathEvaluator()
 
+@register_tool(
+    type = "function",
+    name = "evaluate_expression",
+    description = "Perform mathematical calculations safely. This tool can handle:\n- Basic arithmetic: +, -, *, /, %, //, **\n- Mathematical functions: sqrt, sin, cos, tan, log, exp, etc.\n- Constants: pi, e, tau, inf\n- Functions: abs, round, min, max, sum, factorial\n\nExamples:\n- \"2 + 3 * 4\" -> 14\n- \"sqrt(16)\" -> 4.0\n- \"sin(pi/2)\" -> 1.0",
+    parameters = {
+        "type": "object",
+        "properties": {
+            "expression": {
+                "type": "string",
+                "description": "Mathematical expression as a string."
+            }
+        },
+        "required": ["expression"]
+    }
+)
 def evaluate_expression(expression: str) -> str:
     """
     Perform mathematical calculations safely. This tool can handle:
