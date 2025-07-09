@@ -10,22 +10,14 @@ load_dotenv(override=True)
 from utils import FileStrategy, get_filename_ext, vprint, EXT_TO_STRATEGY
 
 # Import all tools from their respective modules.
-from tools.calculator import evaluate_expression
-from tools.wikipedia_retrieval import (
-    wikipedia_page_search,
-    wikipedia_page_sections_retriever, 
-    wikipedia_section_content_retriever,
-    wikipedia_similarity_retriever,
-)
-from tools.web_search import web_search
-from tools.youtube_video_analysis import analyze_youtube_video
+from tools import TOOL_REGISTRY
 
 # Define the system prompt that guides the AI's behavior.
 # This prompt instructs the model on how to structure its responses,
 # ensuring the final output is in a consistent and parsable format.
 INSTRUCTIONS = "You are a general AI assistant. I will ask you a question. Report your thoughts, and finish your answer with the following template: FINAL ANSWER: [YOUR FINAL ANSWER]. YOUR FINAL ANSWER should be a number OR as few words as possible OR a comma separated list of numbers and/or strings. If you are asked for a number, don't use comma to write your number neither use units such as $ or percent sign unless specified otherwise. If you are asked for a string, don't use articles, neither abbreviations (e.g. for cities), and write the digits in plain text unless specified otherwise. If you are asked for a comma separated list, apply the above rules depending of whether the element to be put in the list is a number or a string."
 
-def call_function(name, args) -> str:
+def _call_function(name, args) -> str:
     """
     Dispatches function calls to the appropriate tool based on the function name.
     
@@ -36,20 +28,7 @@ def call_function(name, args) -> str:
     Returns:
         str: The result from the called function.
     """
-    if name == "evaluate_expression":
-        return evaluate_expression(**args)
-    if name == "wikipedia_page_search":
-        return wikipedia_page_search(**args)
-    if name == "wikipedia_page_sections_retriever":
-        return wikipedia_page_sections_retriever(**args)
-    if name == "wikipedia_section_content_retriever":
-        return wikipedia_section_content_retriever(**args)
-    if name == "wikipedia_similarity_retriever":
-        return wikipedia_similarity_retriever(**args)
-    if name == "web_search":
-        return web_search(**args)
-    if name == "analyze_youtube_video":
-        return analyze_youtube_video(**args)
+    return TOOL_REGISTRY[name](**args)
 
 class GAIAAgent:
     """
@@ -271,7 +250,7 @@ class GAIAAgent:
                     vprint(f"{' ' * 4}- Calling tool: {tool_name} with args: {tool_args}")
 
                     # Execute the function call
-                    result = call_function(tool_name, tool_args)
+                    result = _call_function(tool_name, tool_args)
                     
                     # Truncate very long results for logging purposes
                     line_length = 120
@@ -301,7 +280,7 @@ class GAIAAgent:
             return "No answer found."
         
         finally:
-            self.cleanup()
+            self._cleanup()
 
     def _handle_file(self, file_path: str) -> dict:
         """
@@ -351,9 +330,8 @@ class GAIAAgent:
                 "type": "input_file",
                 "file_id": file.id
             }
-
             
-    def cleanup(self):
+    def _cleanup(self):
         """
         Cleans up any resources used by the agent, such as uploaded files or containers.
         """
