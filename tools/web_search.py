@@ -2,7 +2,6 @@ import os
 from openai import OpenAI
 from tools.tool_registry import register_tool
 
-
 @register_tool(
     type = "function",
     name = "web_search",

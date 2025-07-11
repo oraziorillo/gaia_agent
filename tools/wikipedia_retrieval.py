@@ -10,7 +10,6 @@ from services.chroma import ChromaClient
 pages_cache: dict[str, wikipedia.WikipediaPage] = {}
 chroma_client = ChromaClient()
 
-
 @register_tool(
     type = "function",
     name = "wikipedia_page_search",

@@ -4,6 +4,76 @@ import math
 from typing import Union
 from tools.tool_registry import register_tool
 
+@register_tool(
+    type = "function",
+    name = "evaluate_expression",
+    description = "Perform mathematical calculations safely. This tool can handle:\n- Basic arithmetic: +, -, *, /, %, //, **\n- Mathematical functions: sqrt, sin, cos, tan, log, exp, etc.\n- Constants: pi, e, tau, inf\n- Functions: abs, round, min, max, sum, factorial\n\nExamples:\n- \"2 + 3 * 4\" -> 14\n- \"sqrt(16)\" -> 4.0\n- \"sin(pi/2)\" -> 1.0",
+    parameters = {
+        "type": "object",
+        "properties": {
+            "expression": {
+                "type": "string",
+                "description": "Mathematical expression as a string."
+            }
+        },
+        "required": ["expression"]
+    }
+)
+def evaluate_expression(expression: str) -> str:
+    """
+    Perform mathematical calculations safely. This tool can handle:
+    - Basic arithmetic: +, -, *, /, %, //, **
+    - Mathematical functions: sqrt, sin, cos, tan, log, exp, etc.
+    - Constants: pi, e, tau, inf
+    - Functions: abs, round, min, max, sum, factorial
+    
+    Examples:
+    - "2 + 3 * 4" -> 14
+    - "sqrt(16)" -> 4.0
+    - "sin(pi/2)" -> 1.0
+    - "log(e)" -> 1.0
+    - "2**3" -> 8
+    
+    Args:
+        expression: Mathematical expression as a string
+        
+    Returns:
+        String representation of the calculation result
+    """
+
+    # Initialize the evaluator
+    math_evaluator = SafeMathEvaluator()
+    
+    try:
+        # Clean the input
+        expression = expression.strip()
+        
+        if not expression:
+            return "Error: Empty expression provided"
+        
+        # Evaluate the expression
+        result = math_evaluator.evaluate(expression)
+        
+        # Format the result nicely
+        if isinstance(result, float):
+            # Round to reasonable precision and remove trailing zeros
+            if result.is_integer():
+                return str(int(result))
+            else:
+                return f"{result:.10g}"
+        else:
+            return str(result)
+            
+    except ZeroDivisionError:
+        return "Error: Division by zero"
+    except ValueError as e:
+        return f"Error: {str(e)}"
+    except SyntaxError:
+        return "Error: Invalid mathematical expression syntax"
+    except Exception as e:
+        return f"Error: Unexpected error occurred - {str(e)}"
+
+
 class SafeMathEvaluator:
     """
     Safe mathematical expression evaluator that only allows basic math operations
@@ -129,71 +199,3 @@ class SafeMathEvaluator:
             return [self._eval_node(item) for item in node.elts]
         else:
             raise ValueError(f"Unsupported node type: {type(node).__name__}")
-
-# Initialize the evaluator
-math_evaluator = SafeMathEvaluator()
-
-@register_tool(
-    type = "function",
-    name = "evaluate_expression",
-    description = "Perform mathematical calculations safely. This tool can handle:\n- Basic arithmetic: +, -, *, /, %, //, **\n- Mathematical functions: sqrt, sin, cos, tan, log, exp, etc.\n- Constants: pi, e, tau, inf\n- Functions: abs, round, min, max, sum, factorial\n\nExamples:\n- \"2 + 3 * 4\" -> 14\n- \"sqrt(16)\" -> 4.0\n- \"sin(pi/2)\" -> 1.0",
-    parameters = {
-        "type": "object",
-        "properties": {
-            "expression": {
-                "type": "string",
-                "description": "Mathematical expression as a string."
-            }
-        },
-        "required": ["expression"]
-    }
-)
-def evaluate_expression(expression: str) -> str:
-    """
-    Perform mathematical calculations safely. This tool can handle:
-    - Basic arithmetic: +, -, *, /, %, //, **
-    - Mathematical functions: sqrt, sin, cos, tan, log, exp, etc.
-    - Constants: pi, e, tau, inf
-    - Functions: abs, round, min, max, sum, factorial
-    
-    Examples:
-    - "2 + 3 * 4" -> 14
-    - "sqrt(16)" -> 4.0
-    - "sin(pi/2)" -> 1.0
-    - "log(e)" -> 1.0
-    - "2**3" -> 8
-    
-    Args:
-        expression: Mathematical expression as a string
-        
-    Returns:
-        String representation of the calculation result
-    """
-    try:
-        # Clean the input
-        expression = expression.strip()
-        
-        if not expression:
-            return "Error: Empty expression provided"
-        
-        # Evaluate the expression
-        result = math_evaluator.evaluate(expression)
-        
-        # Format the result nicely
-        if isinstance(result, float):
-            # Round to reasonable precision and remove trailing zeros
-            if result.is_integer():
-                return str(int(result))
-            else:
-                return f"{result:.10g}"
-        else:
-            return str(result)
-            
-    except ZeroDivisionError:
-        return "Error: Division by zero"
-    except ValueError as e:
-        return f"Error: {str(e)}"
-    except SyntaxError:
-        return "Error: Invalid mathematical expression syntax"
-    except Exception as e:
-        return f"Error: Unexpected error occurred - {str(e)}"
