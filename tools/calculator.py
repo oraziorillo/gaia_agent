@@ -2,11 +2,9 @@ import ast
 import operator
 import math
 from typing import Union
-from tools.tool_registry import register_tool
+from tools.tool import tool
 
-@register_tool(
-    type = "function",
-    name = "evaluate_expression",
+@tool(
     description = "Perform mathematical calculations safely. This tool can handle:\n- Basic arithmetic: +, -, *, /, %, //, **\n- Mathematical functions: sqrt, sin, cos, tan, log, exp, etc.\n- Constants: pi, e, tau, inf\n- Functions: abs, round, min, max, sum, factorial\n\nExamples:\n- \"2 + 3 * 4\" -> 14\n- \"sqrt(16)\" -> 4.0\n- \"sin(pi/2)\" -> 1.0",
     parameters = {
         "type": "object",

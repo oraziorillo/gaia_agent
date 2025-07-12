@@ -1,10 +1,8 @@
 import os
 from openai import OpenAI
-from tools.tool_registry import register_tool
+from tools.tool import tool
 
-@register_tool(
-    type = "function",
-    name = "web_search",
+@tool(
     description = "Answers a question by searching the information on the web. Instructions: Ask for a specific information in form of a question.",
     parameters = {
         "type": "object",

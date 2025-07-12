@@ -3,16 +3,14 @@ import wikipedia
 from bs4 import BeautifulSoup
 from typing import Iterable
 from langchain_core.documents import Document
-from tools.tool_registry import register_tool
 from services.chroma import ChromaClient
+from tools.tool import tool
 
 # Similarity retriever
 pages_cache: dict[str, wikipedia.WikipediaPage] = {}
 chroma_client = ChromaClient()
 
-@register_tool(
-    type = "function",
-    name = "wikipedia_page_search",
+@tool(
     description = "Tool that searches for a Wikipedia page based on a query.",
     parameters = {
         "type": "object",
@@ -29,9 +27,7 @@ def wikipedia_page_search(query: str):
     return wikipedia.search(query)
 
     
-@register_tool(
-    type = "function",
-    name = "wikipedia_page_sections_retriever",
+@tool(
     description = "Tool that retrieves the sections of a specific Wikipedia page.",
     parameters = {
         "type": "object",
@@ -53,9 +49,7 @@ def wikipedia_page_sections_retriever(page_title: str):
         return "Disambiguation required. Call this tool again with one of the following options: " + str(e.options)
 
 
-@register_tool(
-    type = "function",
-    name = "wikipedia_section_content_retriever",
+@tool(
     description = "Tool that retrieves the content of a specific section of a specific Wikipedia page.",
     parameters = {
         "type": "object",
@@ -80,9 +74,7 @@ def wikipedia_section_content_retriever(page_title: str, section_title: str):
         return "Page not found in cache. Please use the correct page title as returned by the wikipedia_page_sections_retriever tool."
     
 
-@register_tool(
-    type = "function",
-    name = "wikipedia_similarity_retriever",
+@tool(
     description = "Tool that retrieves information on Wikipedia based on similarity search with the query.",
     parameters = {
         "type": "object",

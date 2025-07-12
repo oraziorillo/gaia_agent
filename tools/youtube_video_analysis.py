@@ -1,12 +1,10 @@
 from google import genai
 from google.genai.types import Part, Content, FileData
-from tools.tool_registry import register_tool
+from tools.tool import tool
 
 client = genai.Client(vertexai=False)
 
-@register_tool(
-    type = "function",
-    name = "analyze_youtube_video",
+@tool(
     description = "Analyzes the content of a YouTube video and answers a question about it.",
     parameters = {
         "type": "object",
