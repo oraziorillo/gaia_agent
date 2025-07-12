@@ -130,9 +130,12 @@ class GAIAAgent:
                     result = _call_function(tool_name, tool_args)
                     
                     # Truncate very long results for logging purposes
-                    line_length = 120
-                    postfix = " [...]" if result[119].isalnum() else "[...]"
-                    vprint(f"{' ' * 6}Result: {repr(result if len(result) < line_length else result[:line_length] + postfix)}")
+                    max_line_length = 120
+                    if len(result) < max_line_length:
+                        vprint(f"{' ' * 6}Result: {repr(result)}")
+                    else:
+                        postfix = " [...]" if result[max_line_length - 1].isalnum() else "[...]"
+                        vprint(f"{' ' * 6}Result: {repr(result[:max_line_length] + postfix)}")
                     
                     # Add the function call and its result to conversation history
                     history.append(output)
