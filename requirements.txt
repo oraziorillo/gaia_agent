@@ -3,10 +3,5 @@ openai
 python-dotenv
 requests
 wikipedia
-html-to-markdown
-beautifulsoup4
-langchain
-langchain-core
 google-genai
-chroma
-bs4
+beautifulsoup4
