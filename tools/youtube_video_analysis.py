@@ -1,8 +1,9 @@
+import os
 from google import genai
 from google.genai.types import Part, Content, FileData
 from tools.tool import tool
 
-client = genai.Client(vertexai=False)
+client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
 
 @tool(
     description = "Analyzes the content of a YouTube video and answers a question about it.",
