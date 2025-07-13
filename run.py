@@ -5,6 +5,11 @@ import sys
 import threading
 import itertools
 import time
+
+# Load environment variables from a .env file, which is where the OpenAI API key is stored.
+from dotenv import load_dotenv
+load_dotenv(override=True)
+
 from agent import GAIAAgent
 
 def print_custom_help():

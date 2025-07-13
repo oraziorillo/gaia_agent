@@ -3,10 +3,6 @@ import os
 import traceback
 from openai import OpenAI
 
-# Load environment variables from a .env file, which is where the OpenAI API key is stored.
-from dotenv import load_dotenv
-load_dotenv(override=True)
-
 from utils import FileStrategy, get_filename_ext, vprint, EXT_TO_STRATEGY
 
 # Import all tools from their respective modules.
