@@ -1,6 +1,23 @@
 import os
 from openai import OpenAI
+from tools.tool_registry import register_tool
 
+
+@register_tool(
+    type = "function",
+    name = "web_search",
+    description = "Answers a question by searching the information on the web. Instructions: Ask for a specific information in form of a question.",
+    parameters = {
+        "type": "object",
+        "properties": {
+            "question": {
+                "type": "string",
+                "description": "The question that you need to be answered with the information on the web."
+            }
+        },
+        "required": ["question"]
+    }   
+)
 def web_search(question: str) -> str:
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))    
     response = client.responses.create(
