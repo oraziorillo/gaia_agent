@@ -17,12 +17,13 @@ hf_oauth_expiration_minutes: 480
 
 ## 🎯 Project Purpose
 
-This project implements an AI agent that can answer questions using multiple tools and capabilities. The Gaia Agent is built with a ReAct (Reasoning and Acting) architecture that leverages OpenAI's API to process questions and utilize various tools including:
+This project implements an AI agent that can answer questions using multiple tools and capabilities. The Gaia Agent is built with a ReAct (Reasoning and Acting) architecture that leverages OpenAI's API to process questions and utilizes various tools including:
 
 - **Web Search**: Real-time information retrieval from the web
 - **Wikipedia Integration**: Access to Wikipedia pages and content
 - **Calculator**: Mathematical expression evaluation
 - **YouTube Video Analysis**: Content analysis of YouTube videos using Google's Gemini API
+- **Code Interpreter**: Write and run python code 
 
 The system is designed to provide accurate, well-reasoned answers by combining multiple information sources and tools in an intelligent manner.
 
@@ -39,7 +40,7 @@ The system is designed to provide accurate, well-reasoned answers by combining m
 1. **Clone the repository:**
    ```bash
    git clone <repository-url>
-   cd Final_Assignment_Template
+   cd gaia-agent 
    ```
 
 2. **Create and activate a virtual environment:**
@@ -116,9 +117,9 @@ Final_Assignment_Template/
 ├── app.py                # Gradio web interface for Hugging Face Spaces
 ├── run.py                # CLI utility
 ├── requirements.txt      # Python dependencies
-├── settings.py          # Configuration settings
-├── utils.py             # Utility functions
-└── tools/               # Tool implementations
+├── settings.py           # Configuration settings
+├── utils.py              # Utility functions
+└── tools/                # Tool implementations
     ├── __init__.py
     ├── calculator.py
     ├── web_search.py
